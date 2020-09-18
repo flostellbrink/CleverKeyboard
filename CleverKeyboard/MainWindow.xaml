@@ -1,0 +1,41 @@
+﻿<Window x:Class="CleverKeyboard.MainWindow"
+        x:Name="Main"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CleverKeyboard"
+        mc:Ignorable="d"
+        Title="Clever Keyboard"
+        Height="600" Width="400"
+        WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/CleverKeyboard;component/CleverKeyboard.png"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True" d:DataContext="{local:MainWindowViewModel}">
+	<ScrollViewer VerticalScrollBarVisibility="Auto">
+		<Grid Margin="20,30,20,20">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="40" />
+				<RowDefinition Height="40" />
+				<RowDefinition Height="1*" />
+			</Grid.RowDefinitions>
+			<TextBlock Grid.Row="0" FontSize="24">Detected Keyboards</TextBlock>
+			<TextBlock Grid.Row="1" FontSize="14">Press any key to make a keyboard show up.</TextBlock>
+			<ItemsControl Grid.Row="2" ItemsSource="{Binding ActiveKeyboards}">
+				<ItemsControl.ItemTemplate>
+					<DataTemplate DataType="local:Keyboard">
+						<Grid Margin="0,10,0,10">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="40" />
+								<RowDefinition />
+							</Grid.RowDefinitions>
+							<TextBlock Grid.Row="0" FontSize="20" Text="{Binding Name}" />
+							<ComboBox Grid.Row="1"
+							          ItemsSource="{Binding ElementName=Main, Path=DataContext.(local:MainWindowViewModel.Layouts)}" />
+						</Grid>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+		</Grid>
+	</ScrollViewer>
+</Window>
