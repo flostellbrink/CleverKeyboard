@@ -15,6 +15,12 @@ namespace CleverKeyboard
 			DataContext = ViewModel;
 			InitializeComponent();
 			RegisterInputSink();
+
+			Closing += (sender, args) =>
+			{
+				Hide();
+				args.Cancel = true;
+			};
 		}
 
 		private MainWindowViewModel ViewModel { get; } = new MainWindowViewModel();

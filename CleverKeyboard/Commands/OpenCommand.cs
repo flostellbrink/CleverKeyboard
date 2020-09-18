@@ -23,6 +23,7 @@ namespace CleverKeyboard.Commands
 			var window = Application.Current.MainWindow;
 			if (window == null) return;
 
+			window.Show();
 			window.WindowState = WindowState.Normal;
 			Application.Current.MainWindow?.Focus();
 		}
