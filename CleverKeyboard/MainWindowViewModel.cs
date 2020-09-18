@@ -55,8 +55,6 @@ namespace CleverKeyboard
 			var currentLayout = User32.GetKeyboardLayout();
 			if (preferredLayout == currentLayout) return;
 
-			Console.WriteLine($"Switching from {Layouts.Find(l => l.Handle == currentLayout)} to {Layouts.Find(l => l.Handle == preferredLayout)}");
-
 			User32.SetCurrentLayout(preferredLayout);
 			User32.SetDefaultLayout(preferredLayout);
 		}
