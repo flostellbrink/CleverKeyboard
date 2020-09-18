@@ -7,11 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="CleverKeyboard.png" />
-    <Resource Include="CleverKeyboard.png" />
+    <None Remove="Icons\CleverKeyboard.png" />
+    <Resource Include="Icons\CleverKeyboard.png" />
+    <None Remove="Icons\CleverKeyboard.ico" />
+    <Resource Include="Icons\CleverKeyboard.ico" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.0.8" />
     <PackageReference Include="ModernWpfUI" Version="0.9.1" />
   </ItemGroup>
 
