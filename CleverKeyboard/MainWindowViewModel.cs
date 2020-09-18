@@ -23,6 +23,7 @@ namespace CleverKeyboard
 			Layouts = User32.GetKeyboardLayoutList()
 				.Select(handle => new Layout{Handle = handle, Name = User32.GetKeyboardLayoutName(handle)})
 				.ToList();
+			Layouts.Insert(0, new Layout{Name = "Keep current layout"});
 		}
 
 		/// <summary>List of available keyboard layouts.</summary>
@@ -51,7 +52,10 @@ namespace CleverKeyboard
 			if (!keyboard.PreferredLayoutHandle.HasValue) return;
 
 			var preferredLayout = keyboard.PreferredLayoutHandle.Value;
-			if (preferredLayout == User32.GetKeyboardLayout()) return;
+			var currentLayout = User32.GetKeyboardLayout();
+			if (preferredLayout == currentLayout) return;
+
+			Console.WriteLine($"Switching from {Layouts.Find(l => l.Handle == currentLayout)} to {Layouts.Find(l => l.Handle == preferredLayout)}");
 
 			User32.SetCurrentLayout(preferredLayout);
 			User32.SetDefaultLayout(preferredLayout);
@@ -72,6 +76,11 @@ namespace CleverKeyboard
 		/// <summary>Handle of the layout to be used with this keyboard.</summary>
 		public IntPtr? PreferredLayoutHandle { get; set; }
 
+		public Layout PreferredLayout
+		{
+			set => PreferredLayoutHandle = value.Handle;
+		}
+
 		public event PropertyChangedEventHandler PropertyChanged;
 
 		public void OnChanged(string property)
@@ -83,7 +92,7 @@ namespace CleverKeyboard
 	public class Layout
 	{
 		/// <summary>Windows internal layout handle.</summary>
-		public IntPtr Handle { get; set; }
+		public IntPtr? Handle { get; set; }
 
 		/// <summary>Windows internal layout name.</summary>
 		public string Name { get; set; }
