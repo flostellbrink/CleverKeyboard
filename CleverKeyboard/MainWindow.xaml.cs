@@ -24,7 +24,7 @@ namespace CleverKeyboard
 		private void RegisterInputSink()
 		{
 			var handle = new WindowInteropHelper(this).EnsureHandle();
-			var device = new User32.RAWINPUTDEVICE(1, 6, User32.RIDEV_INPUTSINK, handle);
+			var device = new User32.RawInputDevice(1, 6, User32.RidevInputSink, handle);
 			if (!User32.RegisterRawInputDevices(device))
 				throw new Exception("Failed to register input sink.");
 
@@ -32,12 +32,12 @@ namespace CleverKeyboard
 
 			IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
 			{
-				if (msg != User32.WM_INPUT) return IntPtr.Zero;
+				if (msg != User32.WmInput) return IntPtr.Zero;
 
-				var result = User32.GetRawInputData(lParam, User32.RID_HEADER, out var header);
+				var result = User32.GetRawInputData(lParam, User32.RidHeader, out var header);
 				if (result == uint.MaxValue) throw new Exception("Could not read input data.");
 
-				ViewModel.MakeKeyboardActive(header.hDevice);
+				ViewModel.ActivateKeyboard(header.hDevice);
 
 				return IntPtr.Zero;
 			}
