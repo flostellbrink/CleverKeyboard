@@ -23,7 +23,7 @@ namespace CleverKeyboard
 			Layouts = User32.GetKeyboardLayoutList()
 				.Select(handle => new Layout{Handle = handle, Name = User32.GetKeyboardLayoutName(handle)})
 				.ToList();
-			Layouts.Insert(0, new Layout{Name = "Keep current layout"});
+			Layouts.Insert(0, new Layout { Description = "Keep current layout" });
 		}
 
 		/// <summary>List of available keyboard layouts.</summary>
@@ -95,6 +95,9 @@ namespace CleverKeyboard
 		/// <summary>Windows internal layout name.</summary>
 		public string Name { get; set; }
 
-		public override string ToString() => Name.Split("/").Last().Trim();
+		/// <summary>Description of what happens if this layout is selected.</summary>
+		public string Description { get; set; }
+
+		public override string ToString() => Description ?? $"Switch to {Name.Split("/").Last().Trim()}";
 	}
 }
