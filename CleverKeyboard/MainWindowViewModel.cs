@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -32,7 +33,7 @@ namespace CleverKeyboard
 		public ObservableCollection<Keyboard> ActiveKeyboards { get; }
 	}
 
-	public class Keyboard
+	public class Keyboard : INotifyPropertyChanged
 	{
 		/// <summary>Windows internal keyboard handle.</summary>
 		public IntPtr Handle { get; set; }
@@ -47,6 +48,10 @@ namespace CleverKeyboard
 		{
 			set => PreferredLayoutHandle = value.Handle;
 		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		public void OnChange() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
 	}
 
 	public class Layout

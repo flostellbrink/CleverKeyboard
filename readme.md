@@ -2,7 +2,7 @@
 
 ## Roadmap
 
--   [ ] Flash entry on input: https://stackoverflow.com/questions/4177574/
+-   [x] Flash entry on input: https://stackoverflow.com/questions/4177574/
 -   [ ] Minimize to tray
 -   [ ] Add autostart
 -   [ ] Show notifications for new keyboards

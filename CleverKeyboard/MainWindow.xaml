@@ -1,4 +1,4 @@
-﻿<Window x:Class="CleverKeyboard.MainWindow"
+<Window x:Class="CleverKeyboard.MainWindow"
         x:Name="Main"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -25,11 +25,26 @@
 				<ItemsControl.ItemTemplate>
 					<DataTemplate DataType="local:Keyboard">
 						<Grid Margin="0,10,0,10">
+							<Grid.RenderTransform>
+								<TranslateTransform x:Name="Translate"/>
+							</Grid.RenderTransform>
+							<Grid.Triggers>
+								<EventTrigger RoutedEvent="Binding.TargetUpdated">
+									<EventTrigger.Actions>
+										<BeginStoryboard>
+											<Storyboard TargetName="Translate" TargetProperty="X">
+												<DoubleAnimation BeginTime="0:0:0.0" Duration="0:0:0.2" To="10" />
+												<DoubleAnimation BeginTime="0:0:0.2" Duration="0:0:0.2" To="0" />
+											</Storyboard>
+										</BeginStoryboard>
+									</EventTrigger.Actions>
+								</EventTrigger>
+							</Grid.Triggers>
 							<Grid.RowDefinitions>
 								<RowDefinition Height="40" />
 								<RowDefinition />
 							</Grid.RowDefinitions>
-							<TextBlock Grid.Row="0" FontSize="20" Text="{Binding Name}" />
+							<TextBlock Grid.Row="0" FontSize="20" Text="{Binding Name, NotifyOnTargetUpdated=True}" />
 							<ComboBox Grid.Row="1"
 							          ItemsSource="{Binding ElementName=Main, Path=DataContext.(local:MainWindowViewModel.Layouts)}"
 							          SelectedIndex="0"

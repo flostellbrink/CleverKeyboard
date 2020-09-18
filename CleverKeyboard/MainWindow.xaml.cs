@@ -50,6 +50,7 @@ namespace CleverKeyboard
 				ViewModel.ActiveKeyboards.Add(activeKeyboard);
 			}
 
+			activeKeyboard.OnChange();
 			if (!activeKeyboard.PreferredLayoutHandle.HasValue) return;
 
 			var preferredLayout = activeKeyboard.PreferredLayoutHandle.Value;
