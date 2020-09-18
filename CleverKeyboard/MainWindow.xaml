@@ -24,7 +24,8 @@
 			<tb:TaskbarIcon Visibility="Visible"
 			                ToolTipText="Clever Keyboard"
 			                IconSource="Icons/CleverKeyboard.ico"
-			                MenuActivation="LeftOrRightClick">
+			                DoubleClickCommand="{Commands:OpenCommand}"
+			                MenuActivation="RightClick">
 				<tb:TaskbarIcon.ContextMenu>
 					<ContextMenu>
 						<MenuItem Header="Open" Command="{Commands:OpenCommand}"/>
