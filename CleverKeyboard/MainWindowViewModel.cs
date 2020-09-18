@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace CleverKeyboard
 {
@@ -10,20 +10,16 @@ namespace CleverKeyboard
 	{
 		public MainWindowViewModel()
 		{
-			Keyboards = User32.GetRawInputDeviceList()
-				.Where(device => device.dwType == User32.RimTypeKeyboard)
-				.Select(device => new Keyboard
-				{
-					Handle = device.hDevice,
-					Name = User32.GetRawInputDeviceName(device.hDevice)
-				})
+			Keyboards = User32.GetKeyboards()
+				.Select(handle => new Keyboard { Handle = handle, Name = User32.GetRawInputDeviceName(handle) })
 				.ToList();
-			ActiveKeyboards = new ObservableCollection<Keyboard>(Keyboards.Where(keyboard => keyboard.Activated));
 
-			Layouts = User32.GetKeyboardLayoutList()
-				.Select(handle => new Layout{Handle = handle, Name = User32.GetKeyboardLayoutName(handle)})
+			ActiveKeyboards = new ObservableCollection<Keyboard>();
+
+			Layouts = User32.GetKeyboardLayouts()
+				.Select(handle => new Layout { Handle = handle, Name = User32.GetKeyboardName(handle) })
+				.Prepend(new Layout { Description = "Keep current layout" })
 				.ToList();
-			Layouts.Insert(0, new Layout { Description = "Keep current layout" });
 		}
 
 		/// <summary>List of available keyboard layouts.</summary>
@@ -32,35 +28,11 @@ namespace CleverKeyboard
 		/// <summary>List of keyboards that are connected to the machine.</summary>
 		public List<Keyboard> Keyboards { get; }
 
+		/// <summary>List of keyboards that have been used.</summary>
 		public ObservableCollection<Keyboard> ActiveKeyboards { get; }
-
-		public void ActivateKeyboard(IntPtr handle)
-		{
-			var keyboard = Keyboards.FirstOrDefault(k => k.Handle == handle);
-			if (keyboard == null) return;
-
-			SetLayout(keyboard);
-			if (keyboard.Activated) return;
-
-			keyboard.Activated = true;
-			keyboard.OnChanged(nameof(Keyboard.Activated));
-			ActiveKeyboards.Add(keyboard);
-		}
-
-		private void SetLayout(Keyboard keyboard)
-		{
-			if (!keyboard.PreferredLayoutHandle.HasValue) return;
-
-			var preferredLayout = keyboard.PreferredLayoutHandle.Value;
-			var currentLayout = User32.GetKeyboardLayout();
-			if (preferredLayout == currentLayout) return;
-
-			User32.SetCurrentLayout(preferredLayout);
-			User32.SetDefaultLayout(preferredLayout);
-		}
 	}
 
-	public class Keyboard : INotifyPropertyChanged
+	public class Keyboard
 	{
 		/// <summary>Windows internal keyboard handle.</summary>
 		public IntPtr Handle { get; set; }
@@ -68,22 +40,12 @@ namespace CleverKeyboard
 		/// <summary>Windows internal keyboard name.</summary>
 		public string Name { get; set; }
 
-		/// <summary>Indicates whether the keyboard has been used.</summary>
-		public bool Activated { get; set; }
-
 		/// <summary>Handle of the layout to be used with this keyboard.</summary>
 		public IntPtr? PreferredLayoutHandle { get; set; }
 
 		public Layout PreferredLayout
 		{
 			set => PreferredLayoutHandle = value.Handle;
-		}
-
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		public void OnChanged(string property)
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
 		}
 	}
 
@@ -98,6 +60,9 @@ namespace CleverKeyboard
 		/// <summary>Description of what happens if this layout is selected.</summary>
 		public string Description { get; set; }
 
-		public override string ToString() => Description ?? $"Switch to {Name.Split("/").Last().Trim()}";
+		public override string ToString()
+		{
+			return Description ?? $"Switch to {Name}";
+		}
 	}
 }

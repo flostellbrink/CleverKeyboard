@@ -33,7 +33,7 @@
 							<ComboBox Grid.Row="1"
 							          ItemsSource="{Binding ElementName=Main, Path=DataContext.(local:MainWindowViewModel.Layouts)}"
 							          SelectedIndex="0"
-							          SelectedItem="{Binding PreferredLayout, Mode=OneWayToSource}"/>
+							          SelectedItem="{Binding PreferredLayout, Mode=OneWayToSource}" />
 						</Grid>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>

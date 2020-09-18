@@ -6,7 +6,7 @@ tab_width=4
 insert_final_newline=true
 trim_trailing_whitespace=true
 max_line_length=120
-end_of_line = lf
+end_of_line=lf
 
 [*.{yaml,appxmanifest,axml,build,config,csproj,dbml,discomap,dtd,json,jsproj,lsproj,njsproj,nuspec,proj,props,resjson,resw,resx,StyleCop,targets,tasks,vbproj,xml,xsd}]
 indent_style=space
@@ -33,6 +33,7 @@ dotnet_style_qualification_for_property=false:suggestion
 dotnet_style_require_accessibility_modifiers=for_non_interface_members:suggestion
 
 # ReSharper properties
+resharper_csharp_wrap_after_declaration_lpar=true
 resharper_csharp_wrap_arguments_style=chop_if_long
 resharper_csharp_wrap_chained_method_calls=chop_if_long
 resharper_csharp_wrap_extends_list_style=chop_if_long

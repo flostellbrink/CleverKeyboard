@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Interop;
 
@@ -24,23 +25,38 @@ namespace CleverKeyboard
 		private void RegisterInputSink()
 		{
 			var handle = new WindowInteropHelper(this).EnsureHandle();
-			var device = new User32.RawInputDevice(1, 6, User32.RidevInputSink, handle);
-			if (!User32.RegisterRawInputDevices(device))
-				throw new Exception("Failed to register input sink.");
+			if (!User32.RegisterInputSink(handle)) throw new Exception("Failed to register input sink.");
 
-			HwndSource.FromHwnd(handle)?.AddHook(WndProc);
-
-			IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+			var source = HwndSource.FromHwnd(handle);
+			if (source == null) throw new Exception("Failed to create hwnd source");
+			source.AddHook((IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) =>
 			{
-				if (msg != User32.WmInput) return IntPtr.Zero;
-
-				var result = User32.GetRawInputData(lParam, User32.RidHeader, out var header);
-				if (result == uint.MaxValue) throw new Exception("Could not read input data.");
-
-				ViewModel.ActivateKeyboard(header.hDevice);
-
+				if (msg == User32.WmInput) ActivateKeyboard(User32.GetRawInputDevice(lParam));
 				return IntPtr.Zero;
+			});
+		}
+
+		/// <summary>
+		/// Ensures that the keyboard is tracked as active.
+		/// Activates the corresponding layout if its set and different from the current.
+		/// </summary>
+		private void ActivateKeyboard(IntPtr handle)
+		{
+			var activeKeyboard = ViewModel.ActiveKeyboards.FirstOrDefault(k => k.Handle == handle);
+			if (activeKeyboard == null)
+			{
+				activeKeyboard = ViewModel.Keyboards.FirstOrDefault(k => k.Handle == handle);
+				if (activeKeyboard == null) return;
+				ViewModel.ActiveKeyboards.Add(activeKeyboard);
 			}
+
+			if (!activeKeyboard.PreferredLayoutHandle.HasValue) return;
+
+			var preferredLayout = activeKeyboard.PreferredLayoutHandle.Value;
+			if (preferredLayout == User32.GetKeyboardLayout()) return;
+
+			User32.SetCurrentLayout(preferredLayout);
+			User32.SetDefaultLayout(preferredLayout);
 		}
 	}
 }

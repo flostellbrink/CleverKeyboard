@@ -1,23 +1,27 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32;
+
+#pragma warning disable 649
 
 namespace CleverKeyboard
 {
 	public static class User32
 	{
+		public const uint WmInput = 0x00FF;
+
 		private const uint BsfPostmessage = 0x00000010;
 		private const uint BsmApplications = 0x00000008;
-		public const uint RidevInputSink = 0x00000100;
+		private const uint RidHeader = 0x10000005;
+		private const uint RidevInputSink = 0x00000100;
 		private const uint RidiDeviceName = 0x20000007;
-		public const uint RidHeader = 0x10000005;
-		public const uint RimTypeKeyboard = 1;
-		private const uint SpifSendChange = 2;
+		private const uint RimTypeKeyboard = 1;
 		private const uint SpiSetDefaultInputLang = 90;
-		public const uint WmInput = 0x00FF;
+		private const uint SpifSendChange = 2;
 		private const uint WmInputLangChangeRequest = 0x0050;
 
 		[DllImport("user32.dll", SetLastError = true)]
@@ -28,37 +32,44 @@ namespace CleverKeyboard
 			int cbSize
 		);
 
-		public static bool RegisterRawInputDevices(params RawInputDevice[] rawInputDevices)
+		private static bool RegisterRawInputDevices(params RawInputDevice[] devices)
 		{
-			return RegisterRawInputDevices(
-				rawInputDevices,
-				rawInputDevices.Length,
-				Marshal.SizeOf(typeof(RawInputDevice))
-			);
+			return RegisterRawInputDevices(devices, devices.Length, Marshal.SizeOf(typeof(RawInputDevice)));
+		}
+
+		public static bool RegisterInputSink(IntPtr handle)
+		{
+			return RegisterRawInputDevices(new RawInputDevice
+				{ usUsagePage = 1, usUsage = 6, dwFlags = RidevInputSink, hwndTarget = handle });
 		}
 
 		[DllImport("user32.dll")]
-		private static extern int GetRawInputDeviceList([Out] RawInputDeviceList[] pRawInputDeviceList,
+		private static extern int GetRawInputDeviceList(
+			[Out] RawInputDeviceList[] pRawInputDeviceList,
 			ref uint puiNumDevices,
 			int cbSize);
 
-		public static RawInputDeviceList[] GetRawInputDeviceList()
+		public static IEnumerable<IntPtr> GetKeyboards()
 		{
 			uint nDevices = 0;
-
-			var res = GetRawInputDeviceList(null, ref nDevices, Marshal.SizeOf(typeof(RawInputDeviceList)));
-			Debug.Assert(res == 0);
+			{
+				var result = GetRawInputDeviceList(null, ref nDevices, Marshal.SizeOf(typeof(RawInputDeviceList)));
+				if (result != 0) throw new Exception("Failed to get input device list count.");
+			}
 
 			var deviceList = new RawInputDeviceList[nDevices];
+			{
+				var size = nDevices * (uint) Marshal.SizeOf(typeof(RawInputDeviceList));
+				var result = GetRawInputDeviceList(deviceList, ref size, Marshal.SizeOf(typeof(RawInputDeviceList)));
+				if (result != nDevices) throw new Exception("Failed to get input devices.");
+			}
 
-			var size = nDevices * (uint) Marshal.SizeOf(typeof(RawInputDeviceList));
-			res = GetRawInputDeviceList(deviceList, ref size, Marshal.SizeOf(typeof(RawInputDeviceList)));
-			Debug.Assert(res == nDevices);
-			return deviceList;
+			return deviceList.Where(device => device.dwType == RimTypeKeyboard).Select(device => device.hDevice);
 		}
 
 		[DllImport("user32.dll")]
-		private static extern int GetRawInputDeviceInfo(IntPtr deviceHandle,
+		private static extern int GetRawInputDeviceInfo(
+			IntPtr deviceHandle,
 			uint command,
 			[Out] StringBuilder data,
 			ref uint dataSize);
@@ -66,13 +77,16 @@ namespace CleverKeyboard
 		public static string GetRawInputDeviceName(IntPtr deviceHandle)
 		{
 			uint dataSize = 0;
-			var res = GetRawInputDeviceInfo(deviceHandle, RidiDeviceName, null, ref dataSize);
-			Debug.Assert(res == 0);
-			Debug.Assert(dataSize > 0);
+			{
+				var result = GetRawInputDeviceInfo(deviceHandle, RidiDeviceName, null, ref dataSize);
+				if (result != 0) throw new Exception("Failed to get device name size");
+			}
 
 			var buffer = new StringBuilder((int) dataSize);
-			res = GetRawInputDeviceInfo(deviceHandle, RidiDeviceName, buffer, ref dataSize);
-			Debug.Assert(res > 0);
+			{
+				var result = GetRawInputDeviceInfo(deviceHandle, RidiDeviceName, buffer, ref dataSize);
+				if (result <= 0) throw new Exception("Failed to read device name");
+			}
 
 			return buffer.ToString();
 		}
@@ -86,23 +100,17 @@ namespace CleverKeyboard
 			int cbSizeHeader
 		);
 
-		public static uint GetRawInputData(IntPtr hRawInput, uint uiCommand, out RawInputHeader data)
+		public static IntPtr GetRawInputDevice(IntPtr hRawInput)
 		{
 			var size = Marshal.SizeOf(typeof(RawInputHeader));
 			var buffer = Marshal.AllocHGlobal(size);
 			try
 			{
-				var result = GetRawInputData(
-					hRawInput,
-					uiCommand,
-					buffer,
-					ref size,
-					size
-				);
-
-				data = new RawInputHeader();
-				Marshal.PtrToStructure(buffer, data);
-				return result;
+				if (GetRawInputData(hRawInput, RidHeader, buffer, ref size, size) == uint.MaxValue)
+					throw new Exception("Failed to get input header");
+				var header = Marshal.PtrToStructure<RawInputHeader>(buffer);
+				if (header == null) throw new Exception("Failed to parse input header");
+				return header.hDevice;
 			}
 			finally
 			{
@@ -111,36 +119,23 @@ namespace CleverKeyboard
 		}
 
 		[DllImport("user32", SetLastError = true)]
-		private static extern int BroadcastSystemMessage(uint dwFlags,
+		private static extern int BroadcastSystemMessage(
+			uint dwFlags,
 			ref uint lpdwRecipients,
 			uint uiMessage,
 			IntPtr wParam,
 			IntPtr lParam);
 
-		public static void SetCurrentLayout(IntPtr layoutId) {
+		public static void SetCurrentLayout(IntPtr layoutId)
+		{
 			var recipients = BsmApplications;
 			BroadcastSystemMessage(BsfPostmessage, ref recipients, WmInputLangChangeRequest, IntPtr.Zero, layoutId);
 		}
 
 		[DllImport("user32.dll")]
-		private static extern IntPtr ActivateKeyboardLayout(IntPtr hkl, uint flags);
-
-		[DllImport("user32.dll")]
 		private static extern uint GetKeyboardLayoutList(int nBuff, IntPtr[] lpList);
 
-		[DllImport("user32.dll")]
-		private static extern bool GetKeyboardLayoutNameW([MarshalAs(UnmanagedType.LPWStr)] StringBuilder buffer);
-
-		[DllImport("user32.dll")]
-		private static extern IntPtr GetForegroundWindow();
-
-		[DllImport("user32.dll")]
-		private static extern IntPtr GetWindowThreadProcessId(IntPtr hWnd, uint lpdwProcessId);
-
-		[DllImport("user32.dll")]
-		private static extern IntPtr GetKeyboardLayout(uint thread);
-
-		public static IntPtr[] GetKeyboardLayoutList()
+		public static IEnumerable<IntPtr> GetKeyboardLayouts()
 		{
 			var count = (int) GetKeyboardLayoutList(0, null);
 			Debug.Assert(count > 0);
@@ -151,21 +146,27 @@ namespace CleverKeyboard
 			return localeHandles;
 		}
 
-		public static string GetKeyboardLayoutName(IntPtr keyboardLayout)
+		[DllImport("user32.dll")]
+		private static extern IntPtr ActivateKeyboardLayout(IntPtr hkl, uint flags);
+
+		[DllImport("user32.dll")]
+		private static extern IntPtr GetForegroundWindow();
+
+		[DllImport("user32.dll")]
+		private static extern IntPtr GetWindowThreadProcessId(IntPtr hWnd, uint lpdwProcessId);
+
+		[DllImport("user32.dll")]
+		private static extern IntPtr GetKeyboardLayout(uint thread);
+
+		public static IntPtr GetKeyboardLayout()
 		{
-			return $"{GetLanguageName(keyboardLayout)} / {GetKeyboardName(keyboardLayout)}";
+			return GetKeyboardLayout((ushort) GetWindowThreadProcessId(GetForegroundWindow(), 0));
 		}
 
-		private static string GetLanguageName(IntPtr keyboardLayout)
-		{
-			var langId = (ushort) keyboardLayout.ToInt32();
+		[DllImport("user32.dll")]
+		private static extern bool GetKeyboardLayoutNameW([MarshalAs(UnmanagedType.LPWStr)] StringBuilder buffer);
 
-			var langName = CultureInfo.GetCultureInfo(langId).DisplayName;
-
-			return langName;
-		}
-
-		private static string GetKeyboardName(IntPtr keyboardLayout)
+		public static string GetKeyboardName(IntPtr keyboardLayout)
 		{
 			var currentLayout = GetKeyboardLayout();
 			if (currentLayout != keyboardLayout) ActivateKeyboardLayout(keyboardLayout, 0);
@@ -182,53 +183,32 @@ namespace CleverKeyboard
 			return name as string;
 		}
 
-		public static IntPtr GetKeyboardLayout()
-		{
-			var winThreadProcId = GetWindowThreadProcessId(GetForegroundWindow(), 0);
-			return GetKeyboardLayout((ushort) winThreadProcId);
-		}
-
-		[DllImport("user32.dll", SetLastError = true)]
-		private static extern IntPtr LoadKeyboardLayout([MarshalAs(UnmanagedType.LPTStr)] string pwszKLID, uint flags);
-
-		public static IntPtr LoadKeyboardLayout(ushort layout, uint flags)
-		{
-			return LoadKeyboardLayout(string.Format("{0:X04}{0:X04}", layout), flags);
-		}
-
 		[DllImport("user32.dll")]
 		private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr[] pvParam, uint fWinIni);
 
-		public static void SetDefaultLayout(IntPtr layoutId) {
+		public static void SetDefaultLayout(IntPtr layoutId)
+		{
 			SystemParametersInfo(SpiSetDefaultInputLang, 0, new[] { layoutId }, SpifSendChange);
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
-		public struct RawInputDevice
+		private struct RawInputDevice
 		{
-			private readonly ushort usUsagePage;
-			private readonly ushort usUsage;
-			private readonly uint dwFlags;
-			private readonly IntPtr hwndTarget;
-
-			public RawInputDevice(ushort usUsagePage, ushort usUsage, uint dwFlags, IntPtr hwndTarget)
-			{
-				this.usUsagePage = usUsagePage;
-				this.usUsage = usUsage;
-				this.dwFlags = dwFlags;
-				this.hwndTarget = hwndTarget;
-			}
+			public ushort usUsagePage;
+			public ushort usUsage;
+			public uint dwFlags;
+			public IntPtr hwndTarget;
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
-		public struct RawInputDeviceList
+		private struct RawInputDeviceList
 		{
-			public IntPtr hDevice;
-			public int dwType;
+			public readonly IntPtr hDevice;
+			public readonly int dwType;
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
-		public class RawInputHeader
+		private class RawInputHeader
 		{
 			public uint dwSize;
 			public uint dwType;
