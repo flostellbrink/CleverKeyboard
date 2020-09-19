@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -24,7 +24,7 @@ namespace CleverKeyboard
 
 			try
 			{
-				var configJson = File.ReadAllText($"{AssemblyName}Config.json");
+				var configJson = File.ReadAllText(ConfigLocation);
 				ActiveKeyboards = JsonConvert.DeserializeObject<BindingList<Keyboard>>(configJson);
 			}
 			catch
@@ -34,13 +34,15 @@ namespace CleverKeyboard
 			}
 
 			ActiveKeyboards.ListChanged += (sender, args) => File.WriteAllText(
-				$"{AssemblyName}Config.json",
+				ConfigLocation,
 				JsonConvert.SerializeObject(ActiveKeyboards, Formatting.Indented));
 		}
 
 		private RegistryKey RunKey => Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
 		private string AssemblyName => Assembly.GetExecutingAssembly().GetName().Name;
 		private string ExeLocation => System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+		private string ExeFolder => Path.GetDirectoryName(ExeLocation) ?? throw new Exception("Could not find exe directory");
+		private string ConfigLocation => Path.Combine(ExeFolder, $"{AssemblyName}Config.json");
 
 		/// <summary>Indicates whether the application starts automatically.</summary>
 		public bool AutoStart {
