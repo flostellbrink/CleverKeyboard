@@ -7,3 +7,7 @@ We can change that. This app will choose the correct keyboard every time you pre
 All you have to do is choose which layout belongs to which keyboard.
 
 ![Themes](themes.png)
+
+## Getting started
+
+You can either head over to the [releases](https://github.com/flostellbrink/CleverKeyboard/releases) and grab that file or clone the repository and build the solution yourself.
