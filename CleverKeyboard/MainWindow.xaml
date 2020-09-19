@@ -36,7 +36,7 @@
 				</tb:TaskbarIcon.ContextMenu>
 			</tb:TaskbarIcon>
 			<TextBlock Grid.Row="0" FontSize="24">Settings</TextBlock>
-			<ui:ToggleSwitch Grid.Row="1" IsOn="{Binding AutoStart}">Run Clever Keyboard on Startup</ui:ToggleSwitch>
+			<ui:ToggleSwitch Grid.Row="1" IsOn="{Binding AutoStart}">Run Clever Keyboard on startup</ui:ToggleSwitch>
 			<TextBlock Grid.Row="2" FontSize="24">Detected Keyboards</TextBlock>
 			<TextBlock Grid.Row="3" FontSize="14">Press any key to make a keyboard show up.</TextBlock>
 			<ItemsControl Grid.Row="4" ItemsSource="{Binding ActiveKeyboards}">
