@@ -65,8 +65,7 @@
 							<TextBlock Grid.Row="0" FontSize="18" Text="{Binding Name, NotifyOnTargetUpdated=True}" />
 							<ComboBox Grid.Row="1"
 							          ItemsSource="{Binding ElementName=Main, Path=DataContext.(local:MainWindowViewModel.Layouts)}"
-							          SelectedIndex="0"
-							          SelectedItem="{Binding PreferredLayout, Mode=OneWayToSource}" />
+							          SelectedItem="{Binding PreferredLayout}" />
 						</Grid>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>

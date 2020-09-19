@@ -13,6 +13,8 @@ namespace CleverKeyboard
 		public MainWindow()
 		{
 			DataContext = ViewModel;
+			if (!ViewModel.FirstRun) Hide();
+
 			InitializeComponent();
 			RegisterInputSink();
 
@@ -42,24 +44,39 @@ namespace CleverKeyboard
 			});
 		}
 
+		private Keyboard KeyboardByHandle(IntPtr handle) =>
+			ViewModel.ActiveKeyboards.FirstOrDefault(k => k.Handle == handle);
+
+		private Keyboard KeyboardByName(IntPtr handle, out string name)
+		{
+			var keyboardName = name = User32.GetRawInputDeviceName(handle);
+			var keyboard = ViewModel.ActiveKeyboards.FirstOrDefault(k => k.Name == keyboardName);
+			if (keyboard != null) keyboard.Handle = handle;
+			return keyboard;
+		}
+
+		private Keyboard EnsureKeyboard(IntPtr handle, string name)
+		{
+			var keyboard = new Keyboard { Handle = handle, Name = name };
+			ViewModel.ActiveKeyboards.Add(keyboard);
+			return keyboard;
+		}
+
 		/// <summary>
 		/// Ensures that the keyboard is tracked as active.
 		/// Activates the corresponding layout if its set and different from the current.
 		/// </summary>
 		private void ActivateKeyboard(IntPtr handle)
 		{
-			var activeKeyboard = ViewModel.ActiveKeyboards.FirstOrDefault(k => k.Handle == handle);
-			if (activeKeyboard == null)
-			{
-				activeKeyboard = ViewModel.Keyboards.FirstOrDefault(k => k.Handle == handle);
-				if (activeKeyboard == null) return;
-				ViewModel.ActiveKeyboards.Add(activeKeyboard);
-			}
+			var activeKeyboard =
+				KeyboardByHandle(handle) ??
+				KeyboardByName(handle, out var name) ??
+				EnsureKeyboard(handle, name);
 
-			activeKeyboard.OnChange();
-			if (!activeKeyboard.PreferredLayoutHandle.HasValue) return;
+			activeKeyboard.OnChange(nameof(Keyboard.Name));
+			if (!activeKeyboard.PreferredLayout.Handle.HasValue) return;
 
-			var preferredLayout = activeKeyboard.PreferredLayoutHandle.Value;
+			var preferredLayout = activeKeyboard.PreferredLayout.Handle.Value;
 			if (preferredLayout == User32.GetKeyboardLayout()) return;
 
 			User32.SetCurrentLayout(preferredLayout);
