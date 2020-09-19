@@ -43,14 +43,14 @@ namespace CleverKeyboard
 
 		private RegistryKey RunKey => Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
 		private string AssemblyName => Assembly.GetExecutingAssembly().GetName().Name;
-		private string AssemblyLocation => Assembly.GetExecutingAssembly().Location;
+		private string ExeLocation => System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
 
 		/// <summary>Indicates whether the application starts automatically.</summary>
 		public bool AutoStart {
-			get => RunKey.GetValue(AssemblyName) as string == AssemblyLocation;
+			get => RunKey.GetValue(AssemblyName) as string == ExeLocation;
 			set
 			{
-				if (value) RunKey.SetValue(AssemblyName, AssemblyLocation);
+				if (value) RunKey.SetValue(AssemblyName, ExeLocation);
 				else RunKey.DeleteValue(AssemblyName);
 			}
 		}
