@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
+using System.Windows;
+using Microsoft.Win32;
+
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace CleverKeyboard
@@ -21,6 +25,20 @@ namespace CleverKeyboard
 				.Select(handle => new Layout { Handle = handle, Name = User32.GetKeyboardName(handle) })
 				.Prepend(new Layout { Description = "Keep current layout" })
 				.ToList();
+		}
+
+		private RegistryKey RunKey => Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+		private string AssemblyName => Assembly.GetExecutingAssembly().GetName().Name;
+		private string AssemblyLocation => Assembly.GetExecutingAssembly().Location;
+
+		/// <summary>Indicates whether the application starts automatically.</summary>
+		public bool AutoStart {
+			get => RunKey.GetValue(AssemblyName) as string == AssemblyLocation;
+			set
+			{
+				if (value) RunKey.SetValue(AssemblyName, AssemblyLocation);
+				else RunKey.DeleteValue(AssemblyName);
+			}
 		}
 
 		/// <summary>List of available keyboard layouts.</summary>
