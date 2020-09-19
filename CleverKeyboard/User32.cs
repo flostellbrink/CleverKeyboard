@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32;
@@ -19,7 +18,6 @@ namespace CleverKeyboard
 		private const uint RidHeader = 0x10000005;
 		private const uint RidevInputSink = 0x00000100;
 		private const uint RidiDeviceName = 0x20000007;
-		private const uint RimTypeKeyboard = 1;
 		private const uint SpiSetDefaultInputLang = 90;
 		private const uint SpifSendChange = 2;
 		private const uint WmInputLangChangeRequest = 0x0050;
@@ -41,30 +39,6 @@ namespace CleverKeyboard
 		{
 			return RegisterRawInputDevices(new RawInputDevice
 				{ usUsagePage = 1, usUsage = 6, dwFlags = RidevInputSink, hwndTarget = handle });
-		}
-
-		[DllImport("user32.dll")]
-		private static extern int GetRawInputDeviceList(
-			[Out] RawInputDeviceList[] pRawInputDeviceList,
-			ref uint puiNumDevices,
-			int cbSize);
-
-		public static IEnumerable<IntPtr> GetKeyboards()
-		{
-			uint nDevices = 0;
-			{
-				var result = GetRawInputDeviceList(null, ref nDevices, Marshal.SizeOf(typeof(RawInputDeviceList)));
-				if (result != 0) throw new Exception("Failed to get input device list count.");
-			}
-
-			var deviceList = new RawInputDeviceList[nDevices];
-			{
-				var size = nDevices * (uint) Marshal.SizeOf(typeof(RawInputDeviceList));
-				var result = GetRawInputDeviceList(deviceList, ref size, Marshal.SizeOf(typeof(RawInputDeviceList)));
-				if (result != nDevices) throw new Exception("Failed to get input devices.");
-			}
-
-			return deviceList.Where(device => device.dwType == RimTypeKeyboard).Select(device => device.hDevice);
 		}
 
 		[DllImport("user32.dll")]
@@ -198,13 +172,6 @@ namespace CleverKeyboard
 			public ushort usUsage;
 			public uint dwFlags;
 			public IntPtr hwndTarget;
-		}
-
-		[StructLayout(LayoutKind.Sequential)]
-		private struct RawInputDeviceList
-		{
-			public readonly IntPtr hDevice;
-			public readonly int dwType;
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
